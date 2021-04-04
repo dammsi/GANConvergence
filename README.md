@@ -2,4 +2,6 @@
 
 Code for the experiments in "Convergence Properties of Generative Adversarial Networks".
 
-The code comes with basic functionalities in experimenting with different GAN objectives, including non-saturating GAN, WGAN, WGAN-GP, WGAN-LP and WGAN with simple gradient penalties. The implemented experiments include DiracGAN, learning intervalls in 1D and different manifolds in 2D.
+We implemented the following experiments in PyTorch to explore different techniques fostering GAN convergence. 
+The code base covers different GAN objectives including non-saturating GAN, WGAN, WGAN-GP, WGAN-LP and WGAN with a simple gradient regularization. 
+The learning scenarios cover the DiracGAN, learning intervalls in 1D and different manifolds in 2D.

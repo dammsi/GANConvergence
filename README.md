@@ -7,4 +7,4 @@ The code base covers different GAN objectives including non-saturating GAN, WGAN
 The learning scenarios cover the DiracGAN, learning intervalls in 1D and different manifolds in 2D with respective visualizations.
 
 ## Usage
-For each experiment (Dirac: `DiracGAN.py`, 1D: `GAN_1D.py`, 2D: `GAN_2D.py`) simply specified the required parameters and select whether you want singleruns, multiruns or experiments (multiruns on all combinations of two parameter sets).
+Specify the required parameters for each experiment (Dirac: `DiracGAN.py`, 1D: `GAN_1D.py`, 2D: `GAN_2D.py`) and select whether you want singleruns, multiruns or experiments (multiruns on all combinations of two parameter sets).

@@ -33,3 +33,7 @@ With `GAN_2D.py` learning of different manifolds  or a mixture of Gaussians
   <img src="./images/2D_5gauss.gif" width="32%" height="33%">
 </p>
 (Click to enlarge)
+
+## Dependencies
+
+This repository uses the implementation of the Sinkhorn Loss from https://github.com/gpeyre/SinkhornAutoDiff 

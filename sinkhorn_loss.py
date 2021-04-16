@@ -4,10 +4,16 @@
 import torch
 from torch.autograd import Variable
 import numpy as np
-import matplotlib.pyplot as plt
+from attrdict import AttrDict
+import math
+from tqdm import tqdm
+
+from data import target_data
+from data import get_target_samples
+
 
 def sinkhorn_loss(x, y, n, epsilon=0.01, niter=100):
-    """
+    """-------
     Given two empirical measures with n points each with locations x and y
     outputs an approximation of the OT cost with regularization parameter epsilon
     niter is the max. number of steps in Sinkhorn loop
@@ -32,7 +38,7 @@ def sinkhorn_loss(x, y, n, epsilon=0.01, niter=100):
     rho = 1  # (.5) **2          # unbalanced transport
     tau = -.8  # nesterov-like acceleration
     lam = rho / (rho + epsilon)  # Update exponent
-    thresh = 10**(-1)  # stopping criterion
+    thresh = 10 ** (-1)  # stopping criterion
 
     # Elementary operations .....................................................................
     def ave(u, u1):
@@ -66,8 +72,8 @@ def sinkhorn_loss(x, y, n, epsilon=0.01, niter=100):
             break
     U, V = u, v
     pi = torch.exp(M(U, V))  # Transport plan pi = diag(a)*K*diag(b)
-    #cost = torch.sum(pi * C)  # Sinkhorn cost
-    cost = torch.sqrt(torch.sum(pi * C)) # Sinkhorn cost (square root)
+    # cost = torch.sum(pi * C)  # Sinkhorn cost
+    cost = torch.sqrt(torch.sum(pi * C))  # Sinkhorn cost (square root)
     return cost
 
 
@@ -77,3 +83,28 @@ def cost_matrix(x, y, p=2):
     y_lin = y.unsqueeze(0)
     c = torch.sum((torch.abs(x_col - y_lin)) ** p, 2)
     return c
+
+
+# estimate W_1 for comparing target distributions to themselves
+def estimate_W1():
+    # specify the target data
+    param = {'device': 'cpu',
+             'target_dim': '1D',  # 'dirac', '1D' or '2D'
+             'target_type_2D': 'uniform',  # 'interval', 'points', 'circle', 'square', 'swiss_roll',
+             'scale_factor': 2,
+             'data_bias': -2,
+             'dataset_size': 1000,
+             'batch_size': 50
+             }
+    # convert param to AttrDict
+    param = AttrDict(param)
+    dataset = target_data(param=param, n_samples=param.dataset_size)
+    W_est = []
+    for i in tqdm(range(1000)):
+        samples_1 = get_target_samples(param=param, dataset=dataset)
+        samples_2 = get_target_samples(param=param, dataset=dataset)
+        W_est.append(sinkhorn_loss(samples_1, samples_2, n=param.batch_size))
+    print(np.array(W_est).mean())
+    print(np.array(W_est).std())
+
+# estimate_W1()

@@ -1,4 +1,4 @@
-# --------------- Train the DiracGAN with different regularizers --------------- #
+# -------- Train the DiracGAN with different objectives & regularizers -------- #
 
 import torch
 from torch import optim
@@ -26,10 +26,10 @@ param = {'device': 'cpu',
          'n_epochs': 1000,
          'n_epochs_pic': 200,
          'n_epochs_loss': 5,
-         'batch_size': 1,
-         'dataset_size': 1,
-         'regularizer': 'wgan-gp',  # 'off', 'gp', 'wgan-gp', 'wgan-lp', 'wgan-alp'
-         'pen_weight': 0.5,  # penalty weight (lambda) for 'wgan'
+         'batch_size': 10,
+         'dataset_size': 100,
+         'regularizer': 'gp',  # 'off', 'gp', 'wgan-gp', 'wgan-lp', 'wgan-alp'
+         'pen_weight': 1.0,  # penalty weight (lambda) for 'wgan'
          'schedule_lr': False,  # whether to apply learning rate scheduler (inside training)
          'run_type': 'experiment',  # 'single_run', 'multi_run' or 'experiment'
          'n_runs': 1  # for multi_run and experiment
@@ -38,7 +38,7 @@ param = {'device': 'cpu',
 # make parameters nicely accessible (via param._)
 param = AttrDict(param)
 # make directory for saving
-param['save_dir'] = f"E4/dirac2_WGAN-GP/{param.gan_type}_{param.regularizer}_{param.pen_weight}"
+param['save_dir'] = f"Dirac/{param.gan_type}_{param.regularizer}_{param.pen_weight}"
 
 # ----------------- Initialize the models with optimizers ----------------- #
 # initialize models for regular training
@@ -72,9 +72,9 @@ if param.run_type == 'single_run':
 # ---------------------------- Experiments ---------------------------- #
 elif param.run_type == 'experiment':
     name_1 = 'lr_disc'
-    values_1 = [0.005]
+    values_1 = [0.01]
     name_2 = 'pen_weight'
-    values_2 = [1.0, 2.0]
+    values_2 = [0.3, 0.7, 1.0]
 
     save_dir_orig = param['save_dir']
     for specification in product(values_1, values_2):

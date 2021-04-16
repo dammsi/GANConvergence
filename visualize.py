@@ -1,33 +1,31 @@
-# ----- VISUALIZE ----- #
+# ----------------- Visualize the current learning progress ----------------- #
 
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from matplotlib import cm
+import matplotlib.pyplot as plt
+import numpy as np
 import tikzplotlib
+import torch
+from matplotlib import cm
 
 
 def visualize_training(gen, disc, epoch, true_samples, gen_samples, param,
                        disc_losses, gen_losses, W_dist, trajectory_points=None,
                        decision_boundaries=None):
-    """ todo
+    """
     Visualize training and save figures.
-    :parameter:
-        - gen
-            Generator instance.
-        - disc
-            Discriminator instance.
-        - epoch : int
-            Current epoch number
-        - true_samples : torch.tensor
-            Samples from data.target_data()
-        - noise : torch.tensor
-            Data from data.latent_data()
-        - param : AttrDict
-            Dictionary containing additional parameters
-        - disc_losses & gen_losses : Agents individual losses
-        - W_dist : Wasserstein distance
+    The plot consists of two minor plots (Losses, Wasserstein Distance or Trajectories)
+    and one larger plot depicting the current learning progress (in 2D or 3D).
+    :param gen: Generator instance
+    :param disc: Discriminator instance
+    :param epoch: current epoch (int)
+    :param true_samples: samples from target distribution
+    :param gen_samples: samples from the current generator instance
+    :param param: AttrDict with additional parameters
+    :param disc_losses: Losses for current Discriminator
+    :param gen_losses: Losses for current Generator
+    :param W_dist: List of approximated Wasserstein distances
+    :param trajectory_points: Trajectories (optional)
+    :param decision_boundaries: Decision boundaries (optional)
     """
 
     plt.style.use('ggplot')
@@ -41,11 +39,14 @@ def visualize_training(gen, disc, epoch, true_samples, gen_samples, param,
     plt.xlim(0, param.n_epochs)
     # Choose whether Losses or Wasserstein Distance (or both) should be plotted
     if param.target_dim != "dirac":
-        plt.plot([param.n_epochs_loss * i for i in range(len(gen_losses))], gen_losses, color='red')  # label="Generator Loss")
-        plt.plot([param.n_epochs_loss * i for i in range(len(disc_losses))], disc_losses, color='orange')  # label="Discriminator Loss")
+        plt.plot([param.n_epochs_loss * i for i in range(len(gen_losses))], gen_losses,
+                 color='red')  # label="Generator Loss")
+        plt.plot([param.n_epochs_loss * i for i in range(len(disc_losses))], disc_losses,
+                 color='orange')  # label="Discriminator Loss")
     else:
         plt.ylim(bottom=0., top=max(W_dist))
-        #plt.ylabel(r"$\widehat{W}_1(\mathbb{P},\mathbb{Q})$")
+        # plt.ylabel(r"$\widehat{W}_1(\mathbb{P},\mathbb{Q})$")
+        plt.ylabel(r"$\widehat{W}_1$")
         plt.xlabel("epochs")
         plt.plot([param.n_epochs_loss * i for i in range(len(W_dist))], W_dist, color='blue')
 
@@ -59,7 +60,8 @@ def visualize_training(gen, disc, epoch, true_samples, gen_samples, param,
     else:
         plt.xlim(0, param.n_epochs)
         plt.ylim(bottom=0., top=max(W_dist))
-        #plt.ylabel(r"$\widehat{W}_1(P,Q)$")
+        # plt.ylabel(r"$\widehat{W}_1(P,Q)$")
+        plt.ylabel(r"$\widehat{W}_1$")
         plt.xlabel("epochs")
         plt.plot([param.n_epochs_loss * i for i in range(len(W_dist))], W_dist, color='blue')
 
@@ -80,7 +82,7 @@ def visualize_training(gen, disc, epoch, true_samples, gen_samples, param,
     # plt.title(f"{param.gan_type} - Epoch {epoch}")
     plt.legend(loc=2)
     if epoch == param.n_epochs:
-        #tikzplotlib.clean_figure()
+        # tikzplotlib.clean_figure()
         tikzplotlib.save(f"{param.save_dir}/epoch_{epoch}.tex")
     plt.savefig(f"{param.save_dir}/epoch_{epoch}.png", dpi=100)
     # plt.show()
@@ -103,6 +105,7 @@ def plot_trajectories_dirac(ax, trajectory_points, param):
     plt.plot(trajectory_points[:, 0], trajectory_points[:, 1], marker='.', markersize=5, color='red', alpha=0.4)
     plt.plot(param.data_bias, 0, marker='*', color='blue', alpha=0.8)  # target
     return ax
+
 
 def plot_trajectroies_1D(ax, trajectory_points):
     """
@@ -128,7 +131,7 @@ def plot_trajectroies_1D(ax, trajectory_points):
 
 def visualize_current_state(ax, disc, gen, true_samples, gen_samples, decision_boundaries, param,
                             visualize3d=False):
-    """ todo
+    """
     Subroutine to visualize the current state of the GAN game.
     :param ax: axis for plotting
     :param disc: Discriminator instance
@@ -141,7 +144,6 @@ def visualize_current_state(ax, disc, gen, true_samples, gen_samples, decision_b
     """
     true_offset = -0.05
     gen_offset = 0.05
-    opt_offset = 0.02
 
     if param.target_dim == "dirac":
         true_samples = true_samples[-1]
@@ -158,10 +160,12 @@ def visualize_current_state(ax, disc, gen, true_samples, gen_samples, decision_b
         # Generator
         plt.plot(gen_samples, 0, marker='o', color='red',
                  markersize=10, linestyle='None', label='Generator', alpha=0.8)
+
     if param.target_dim == "1D":
         # Discriminator
         x = np.linspace(-5, 5)
-        plt.plot(x, disc(torch.tensor(x).unsqueeze(1).float()).detach().numpy(), color='orange',
+        D_offset = disc(torch.zeros(1).float()).detach().numpy()
+        plt.plot(x, disc(torch.tensor(x).unsqueeze(1).float()).detach().numpy() - D_offset, color='orange',
                  label="Discriminator", solid_capstyle='round')
         # Discriminator - Lipschitz boundaries for disc_depth==1
         if param.gan_type == "wgan" and param.disc_depth == 1:
@@ -183,9 +187,9 @@ def visualize_current_state(ax, disc, gen, true_samples, gen_samples, decision_b
         gen_samples = gen_samples.detach().numpy()
         plt.plot(gen_samples, np.zeros_like(gen_samples) + 2 * gen_offset, marker='o', color='red', alpha=0.4,
                  markersize=5, linestyle='None')  # label='Generator Samples')
-        #if param.disc_depth == 2 and decision_boundaries is not None:
-            # plot decision boundaries
-            #plt.vlines(decision_boundaries[-1], -3, 3, color='gray', alpha=0.2, label="Decision Boundaries")
+        # if param.disc_depth == 2 and decision_boundaries is not None:
+        # plot decision boundaries
+        # plt.vlines(decision_boundaries[-1], -3, 3, color='gray', alpha=0.2, label="Decision Boundaries")
 
     if param.target_dim == "2D":
         # Discriminator as a color grid
@@ -232,13 +236,19 @@ def visualize_current_state(ax, disc, gen, true_samples, gen_samples, decision_b
         plt.legend()
     return ax
 
-def plot_multiple_runs(W_losses, param, name_1 = None, name_2 = None, current_value_1 = None, current_value_2 = None):
+
+def plot_multiple_runs(W_losses, param, name_1=None, name_2=None, current_value_1=None, current_value_2=None):
     """
-    Plot
-    :param W_losses: Dictionary with approximate Wasserstein losses for each run.
-    :param param: AttrDict instance.
+    Subroutine to visualize progress over multiple runs.
+    :param W_losses: List with approximated Wasserstein losses.
+    :param param: AttrDict with additional parameters
+    :param name_1: Name of the first parameter (in experiment)
+    :param name_2: Name of the second parameter (in experiment)
+    :param current_value_1: Value of the first parameter (in experiment)
+    :param current_value_2: Value of the second parameter (in experiment)
     :return:
     """
+
     plt.style.use('ggplot')
     # prepare array for sum & different colors
     W_losses_sum = np.zeros_like(W_losses[next(iter(W_losses))])
@@ -250,7 +260,8 @@ def plot_multiple_runs(W_losses, param, name_1 = None, name_2 = None, current_va
         W_losses_sum += np.array(W_losses[run])
     # plot average W_loss
     plt.plot([param.n_epochs_loss * i for i in range(len(W_losses[run]))], W_losses_sum / len(W_losses), color='blue')
-    #plt.ylabel(r"$\widehat{W}_1(\mathbb{P},\mathbb{Q})$")
+    # plt.ylabel(r"$\widehat{W}_1(\mathbb{P},\mathbb{Q})$")
+    plt.ylabel(r"$W_1$")
     plt.xlabel("epochs")
     if name_1 is not None:
         tikzplotlib.save(f"{param.save_dir}/W_{name_1}{current_value_1}_{name_2}{current_value_2}.tex")
@@ -259,138 +270,3 @@ def plot_multiple_runs(W_losses, param, name_1 = None, name_2 = None, current_va
         tikzplotlib.save(f"{param.save_dir}/W_losses.tex")
         plt.savefig(f"{param.save_dir}/W_losses.png", dpi=100)
     plt.clf()
-
-def draw_neural_net(ax, layer_sizes, layer_title=None, weights=None, show_weights=False, with_biases=True):
-    """
-    Visualize a neural net using matplotilb.
-    Currently supported: Fullyconected neural nets with or without biases.
-    Now: Weight given as tuples: [[1st layer], [bias], [second layer], [bias] ...]
-    :parameter:
-        - ax : matplotlib.axes.AxesSubplot
-            The axes on which to plot the cartoon (get e.g. by plt.gca())
-        - left : float
-            The center of the leftmost node(s) will be placed here
-        - right : float
-            The center of the rightmost node(s) will be placed here
-        - bottom : float
-            The center of the bottommost node(s) will be placed here
-        - top : float
-            The center of the topmost node(s) will be placed here
-        - layer_sizes : list of int
-            List of layer sizes, including input and output dimensionality
-    :usage:
-        fig = plt.figure(figsize=(12, 12))
-        draw_neural_net(fig.gca(), [4, 7, 2])
-    """
-    # for subplot copy these lines out and give "ax" as an argument
-    # fig = plt.figure(figsize=(10, 10))
-    # ax = fig.gca()
-    ax.axis('off')
-
-    left = 0.15
-    right = 0.85
-    bottom = 0.1
-    top = 0.9
-    # THIS Code checks wether given weights from a Pytorch model fits to layer_sizes
-    # if weights != None:
-    #     shapes = []
-    #     for i in weights:
-    #         shapes.append(np.array(i.size()))
-    #     # check the weight dimensions:
-    #     if with_biases==False:
-    #         for i, shape in enumerate(shapes):
-    #             if layer_sizes[i] != shape[1]:
-    #                 # shape = [out, in]
-    #                 raise Exception("'layer_sizes' and weight matrix do not match. Have you checked for the biases?.")
-    #     else:
-    #         for i, shape in enumerate(shapes):
-    #             if i%2==0 and layer_sizes[i//2] != shape[1]:
-    #                 # only check every second entry in shape corresponding to weight matrices
-    #                 raise Exception("'layer_sizes' and weight matrix do not match. Have you checked for the biases?.")
-    v_spacing = (top - bottom) / float(max(layer_sizes))
-    h_spacing = (right - left) / float(len(layer_sizes) - 1)
-    neuron_frac = v_spacing / 4.
-    if layer_sizes == [1, 1]:
-        neuron_frac = v_spacing / 9.
-
-    # Adjust font size:
-    if neuron_frac >= 0.1:
-        fontsize = 15
-    elif neuron_frac > 0.05:
-        fontsize = 12
-    else:
-        fontsize = 8
-
-    # Nodes & Bias
-    bias_pos = []
-    for n, layer_size in enumerate(layer_sizes):
-        layer_top = v_spacing * (layer_size - 1) / 2. + (top + bottom) / 2.
-        for m in range(layer_size):
-            x = n * h_spacing + left
-            y = layer_top - m * v_spacing
-            circle = plt.Circle((x, y), neuron_frac,
-                                color='w', ec='k', zorder=4)
-            if with_biases and n > 0 and m == layer_size - 1:
-                x_bias = x - h_spacing / 2.  # half the way to previous layer
-                if layer_sizes[n - 1] > layer_sizes[n]:
-                    y_bias = y - (layer_sizes[n - 1] - layer_sizes[
-                        n]) * v_spacing / 2  # move bias down accordingly level of neuron
-                elif layer_sizes[n - 1] == layer_sizes[n]:
-                    y_bias = y - v_spacing / 2
-                else:
-                    y_bias = y  # bias at level of neuron
-                bias = plt.Circle((x_bias, y_bias), neuron_frac / 2.,
-                                  color='w', ec='k', zorder=3)
-                bias_pos.append([x_bias, y_bias])  # store for edge drawing
-                # set 1 for each bias
-                # ax.annotate("1", xy=(x_bias, y_bias), ha="center", va="center", zorder=5, fontsize=fontsize)
-                ax.add_artist(bias)
-            # annotate neuron names
-            # ax.annotate("{}_{}".format(n,m), xy=(x, y), ha="center", va="center", zorder=5, fontsize=fontsize)
-            ax.add_artist(circle)
-        # Layer names
-        if layer_title is not None:
-            plt.text(
-                x=n * h_spacing + left,
-                y=top + 0.05,
-                s="{}".format(layer_title[n]),
-                horizontalalignment='center',
-                verticalalignment='top',
-                fontsize=fontsize,
-                color='black'
-            )
-
-    # Edges
-    for n, (layer_size_a, layer_size_b) in enumerate(zip(layer_sizes[:-1], layer_sizes[1:])):
-        layer_top_a = v_spacing * (layer_size_a - 1) / 2. + (top + bottom) / 2.
-        layer_top_b = v_spacing * (layer_size_b - 1) / 2. + (top + bottom) / 2.
-        for m in range(layer_size_a):
-            for o in range(layer_size_b):
-                frac = 5  # fraction to interpolate along edge, 2 = middle, higher number = closer to neuron
-                frac_bias = 6
-                # Node to Node
-                x1_line = n * h_spacing + left
-                x2_line = (n + 1) * h_spacing + left
-                y1_line = layer_top_a - m * v_spacing
-                y2_line = layer_top_b - o * v_spacing
-                line = plt.Line2D([x1_line, x2_line],
-                                  [y1_line, y2_line], c='k', alpha=0.5)
-                if show_weights:
-                    ax.annotate("{}".format(weights[0][0]),  # FIXME
-                                xy=(x1_line / frac + x2_line * (frac - 1) / frac,
-                                    y1_line / frac + y2_line * (frac - 1) / frac),
-                                ha="center", va="bottom", zorder=5, fontsize=fontsize - 2)
-                ax.add_artist(line)
-                # Bias to Node
-                if m == 0 and with_biases:  # just needed once per "m"
-                    line = plt.Line2D([bias_pos[n][0], (n + 1) * h_spacing + left],
-                                      [bias_pos[n][1], layer_top_b - o * v_spacing], c='k', alpha=0.5, linestyle=':')
-                    if show_weights:
-                        ax.annotate("{}".format(weights[1][0]),  # FIXME
-                                    xy=(bias_pos[n][0] / frac_bias + ((n + 1) * h_spacing + left) * (
-                                            frac_bias - 1) / frac_bias,
-                                        bias_pos[n][1] / frac_bias + (layer_top_b - o * v_spacing) * (
-                                                frac_bias - 1) / frac_bias - v_spacing / 12),
-                                    ha="right", va="bottom", zorder=6, fontsize=fontsize - 2)
-                    ax.add_artist(line)
-    return ax

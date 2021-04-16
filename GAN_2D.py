@@ -1,4 +1,4 @@
-# -------------- Train GANs with different regularizers in 2D -------------- #
+# ------- Train GANs with different objectives & regularizers in 2D ------- #
 
 from torch import optim
 from attrdict import AttrDict
@@ -16,26 +16,26 @@ from postprocess import saving
 # -------------- Specify data, model and training parameters -------------- #
 param = {'device': 'cpu',
          'target_dim': '2D',  # 'dirac', '1D' or '2D'
-         'target_type_2D': 'circle',  # 'interval', 'points', 'circle', 'square', 'swiss_roll',
+         'target_type_2D': 'points',  # 'interval', 'points', 'circle', 'square', 'swiss_roll',
          'scale_factor': 2,
          'data_bias': [0, 0],
          'rot_angle': -0.0 * math.pi,
-         'latent_distribution': 'uniform',  # 'dirac', 'uniform', 'gaussian'
-         'z_dim': 1,  # dimension of latent_distribution
+         'latent_distribution': 'gaussian',  # 'dirac', 'uniform', 'gaussian'
+         'z_dim': 2,  # dimension of latent_distribution
          'gan_type': 'wgan',  # 'wgan' or 'nsgan'
          'disc_depth': 3,  # depth of discriminator
          'gen_depth': 3,  # depth of generator
-         'n_hidden': 20,  # number of hidden neurons if disc_depth==2
-         'n_disc_train': 5,  # disc updates per generator update
-         'lr_disc': 0.0001,
-         'lr_gen': 0.0001,
+         'n_hidden': 40,  # number of hidden neurons if disc_depth==2
+         'n_disc_train': 1,  # disc updates per generator update
+         'lr_disc': 0.005,
+         'lr_gen': 0.005,
          'n_epochs': 100000,
          'n_epochs_pic': 25000,
          'n_epochs_loss': 500,
          'dataset_size': 1000,
          'batch_size': 75,
-         'regularizer': 'wgan-lp',  # 'off', 'wgan-gp', 'wgan-lp', 'wgan-alp'
-         'pen_weight': 10.,  # penalty weight (lambda)
+         'regularizer': 'gp',  # 'off', 'wgan-gp', 'wgan-lp', 'wgan-alp'
+         'pen_weight': 1.,  # penalty weight (lambda)
          'schedule_lr': False,  # whether to apply learning rate scheduler
          'run_type': 'experiment',  # 'single_run', 'multi_run' or 'experiment'
          'n_runs': 10  # for multi_run and experiment
@@ -43,7 +43,7 @@ param = {'device': 'cpu',
 # convert param to AttrDict
 param = AttrDict(param)
 # make directory for saving
-param['save_dir'] = f"E4/2D_{param.target_type_2D}_sGP/NEW/{param.gan_type}_{param.regularizer}_ndisc5"
+param['save_dir'] = f"2D_{param.target_type_2D}/{param.gan_type}_{param.regularizer}_{param.pen_weight}"
 
 # ----------------- Initialize the models with optimizers ----------------- #
 disc = Discriminator(param)
@@ -108,12 +108,11 @@ elif param.run_type == 'multi_run':
 # ---------------------------- Experiments ---------------------------- #
 elif param.run_type == 'experiment':
     name_1 = 'lr_disc'
-    values_1 = [0.0001]
+    values_1 = [0.005]
     name_2 = 'pen_weight'
-    values_2 = [10.]  # 5., 10.]
+    values_2 = [0.5, 2.0, 5.0]
 
-    # fix!
-    param.lr_gen = param.lr_disc
+    gen_optimizer = optim.SGD(gen.parameters(), lr=param.lr_gen)
 
     save_dir_orig = param['save_dir']
     for specification in product(values_1, values_2):
@@ -127,7 +126,6 @@ elif param.run_type == 'experiment':
 
         # (re)initialize optimizers for (potentially) changed LRs
         disc_optimizer = optim.SGD(disc.parameters(), lr=param.lr_disc)
-        gen_optimizer = optim.SGD(gen.parameters(), lr=param.lr_gen)
 
         current_save_dir = save_dir_orig + f"/{name_1}{current_1}_{name_2}{current_2}"
         W_losses = {}

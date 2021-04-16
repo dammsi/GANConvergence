@@ -1,9 +1,8 @@
-# MODEL: Generator and Discriminator
-# Implement generator and discriminator as simple neural nets
+# ------------------------ Define Models & Losses ------------------------ #
 
 from attrdict import AttrDict
-import torch
 from torch import nn
+
 
 class Generator(nn.Module):
     """
@@ -11,6 +10,7 @@ class Generator(nn.Module):
     :parameter:
         - param
     """
+
     def __init__(self, param):
         super(Generator, self).__init__()  # inherit from nn.Module)
         # Build the "neural network" resembling the generator
@@ -20,7 +20,7 @@ class Generator(nn.Module):
         if param.target_dim == "dirac":
             block = [nn.Linear(in_features=param.z_dim, out_features=1, bias=False)]
         elif param.target_dim == "1D":
-            block= [nn.Linear(in_features=param.z_dim, out_features=1, bias=True)]
+            block = [nn.Linear(in_features=param.z_dim, out_features=1, bias=True)]
         elif param.target_dim == "2D":
             block = [nn.Linear(in_features=param.z_dim, out_features=param.n_hidden, bias=True),
                      nn.ReLU()]

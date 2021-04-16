@@ -59,3 +59,6 @@ def saving(param, disc, gen):
         # Saving the models
         torch.save(disc.state_dict(), f"{param.save_dir}/disc.pt")
         torch.save(gen.state_dict(), f"{param.save_dir}/gen.pt")
+
+# count number of (trainable) parameters
+# sum(p.numel() for p in model.parameters() if p.requires_grad)

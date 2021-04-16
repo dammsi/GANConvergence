@@ -1,15 +1,17 @@
-# DATA: target and latent distribution
+# -------------- Define different target distributions -------------- #
 
-import torch
 import math
 import random
+
+import torch
 from sklearn.datasets import make_swiss_roll
 
 
 def target_data(param, n_samples=None):
-    """ todo
+    """
     Draws samples from target distribution. Available target distributions are Dirac,
-    interval in 1D and interval in 2D. Interval in 1D can be scaled and moved (with bias),
+    interval in 1D and manifolds (interval, circle, square, swiss_roll) and mixture of Gaussians in 2D.
+    Interval in 1D can be scaled and moved (with bias),
     interval in 2D can be scaled, moved (bias) and rotated (rot_angle).
     :parameter:
         - param : AttrDict
@@ -43,6 +45,7 @@ def target_data(param, n_samples=None):
 
     if param.target_dim == "1D":
         im_dim = 1
+        # scale and shift uniform distribution U[0,1]
         samples = param.scale_factor * torch.rand((n_samples, im_dim), device=param.device) + param.data_bias
         return samples
 
@@ -60,10 +63,9 @@ def target_data(param, n_samples=None):
         return rot_samples + torch.tensor(param.data_bias)
 
     if param.target_dim == "2D" and param.target_type_2D == 'points':
-        # by hand
-        points = torch.tensor([[-1., 1.], [1., -1.], [1, 1], [-1, -1]])  # [0.5, 0.5], [0.8, -0.2]])
-        points_batch = torch.index_select(points, 0,
-                                          index=torch.randint(low=0, high=points.shape[0], size=[n_samples]))
+        # points = torch.tensor([[-1., 1.], [0,1.42], [0,-1.42], [1.42,0], [-1.42,0], [1., -1.], [1., 1.], [-1., -1.]])  # 8 Gaussians
+        points = torch.tensor([[0., 1.08], [1, 0.41], [-1, 0.41], [0.6, -0.9], [-0.6, -0.9]])  # 5 Gaussians
+        points_batch = torch.index_select(points, 0, index=torch.randint(low=0, high=points.shape[0], size=[n_samples]))
         points_w_noise = points_batch + 0.1 * torch.randn(size=points_batch.shape)
         return points_w_noise
 
@@ -97,6 +99,7 @@ def target_data(param, n_samples=None):
     else:
         raise ValueError("Please specify target_dim: 'dirac', '1D' or '2D'.")
 
+
 def get_target_samples(param, dataset):
     """
     Return random mini-batch from dataset
@@ -106,9 +109,13 @@ def get_target_samples(param, dataset):
     indices = torch.randperm(len(dataset))[:param.batch_size]
     return dataset[indices]
 
+
 def latent_data(param, n_samples=None):
     """
-    Returns latent codes according to the given distribution.
+    Return latent codes from specified distribution.
+    :param param: AttrDict with batch_size and latent_distribution
+    :param n_samples: int
+    :return: latent codes as torch tensor
     """
     if n_samples is None:
         n_samples = param.batch_size
@@ -123,32 +130,3 @@ def latent_data(param, n_samples=None):
         return torch.ones((n_samples, param.z_dim), device=param.device)
     else:
         raise ValueError("Latent distribution should be 'gaussian', 'uniform' or 'dirac'.")
-
-
-def calculate_moments(param, distribution="generator", gen=None):
-    """
-    Estimate the moments of the target distribution up to order n_moments.
-    :param:
-        - param:
-            AttrDict specifying target distribution.
-        - param.n_moments: int
-            Highest calculated moment.
-        - gen: Generator instance
-            Generator to sample from.
-    :return: List of calculated moments.
-    """
-    # TODO Calculate standardized moments? Only up to order 2 useful (covariance-matrix)?
-    moments = [[]] * param.n_moments
-
-    if distribution=="target":
-        samples = target_data(param, n_samples=1000).detach()
-    if distribution=="generator":
-        samples = gen(latent_data(param, n_samples=1000)).detach()
-    else:
-        ValueError("Please specify 'target' or 'generator' as the distribution.")
-    moments[0] = torch.mean(samples, 0)
-
-    for order in range(1, param.n_moments):
-        exp_order = order + 1
-        moments[order] = torch.mean((samples - moments[0])**exp_order, 0)
-    return moments

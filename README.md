@@ -28,8 +28,8 @@ Learning of a uniform distribution with a shallow neural net as discriminator. S
 
 With `GAN_2D.py` learning of different manifolds  or a mixture of Gaussians
 <p float="left">
-  <img src="./images/2D_square.gif" width="33%" height="33%">
-  <img src="./images/2D_circle.gif" width="33%" height="33%">
-  <img src="./images/2D_5gauss.gif" width="33%" height="33%">
+  <img src="./images/2D_square.gif" width="32%" height="33%">
+  <img src="./images/2D_circle.gif" width="32%" height="33%">
+  <img src="./images/2D_5gauss.gif" width="32%" height="33%">
 </p>
 (Click to enlarge)

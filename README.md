@@ -17,13 +17,19 @@ Visualization of training a WGAN + simple Gradient Penalty in the DiracGAN setti
 **Right:** Depiction of current learning progress
 
 ### 1D: Interval Learning
-Learning of a uniform distribution with a shallow neural net as discriminator.
-<img src="./images/1D_sGP.gif" width="100%" height="100%">
+Learning of a uniform distribution with a shallow neural net as discriminator. Successful learning (simple gradient penalty) and failed learning (WGAN-GP).
+<p float="left">
+  <img src="./images/1D_sGP.gif" width="49%" height="50%">
+  <img src="./images/1D_WGAN-GP.gif" width="49%" height="50%">
+</p>
+
 
 ### 2D: Manifold Learning
 
 With `GAN_2D.py` learning of different manifolds  or a mixture of Gaussians
-
-<img src="./images/2D_square.gif" width="100%" height="100%">
-<img src="./images/2D_circle.gif" width="100%" height="100%">
-<img src="./images/2D_5gauss.gif" width="100%" height="100%">
+<p float="left">
+  <img src="./images/2D_square.gif" width="33%" height="33%">
+  <img src="./images/2D_circle.gif" width="33%" height="33%">
+  <img src="./images/2D_5gauss.gif" width="33%" height="33%">
+</p>
+(Click to enlarge)
